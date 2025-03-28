@@ -1,0 +1,93 @@
+import os
+from facenet_pytorch import MTCNN, InceptionResnetV1
+from sklearn.metrics.pairwise import cosine_similarity
+from PIL import Image
+
+# Initialize MTCNN (for face detection) and InceptionResnetV1 (for facial embeddings)
+mtcnn = MTCNN(keep_all=True)
+model = InceptionResnetV1(pretrained='vggface2').eval()
+
+# Function to generate facial encoding (embedding) for an image
+def get_face_encoding(image_path):
+    img = Image.open(image_path)
+    img_cropped = mtcnn(img)  # Detect faces in the image
+    if img_cropped is None:
+        return None  # No face detected, return None
+    img_embedding = model(img_cropped)  # Extract the facial embedding
+    return img_embedding.detach().numpy().flatten()  # Return as 1D array
+
+# Check similarity between two sample images
+image_path_1 = "path_to_image_01.jpg"
+image_path_2 = "path_to_image_02.jpg"
+
+encoding_1 = get_face_encoding(image_path_1)
+encoding_2 = get_face_encoding(image_path_2)
+
+if encoding_1 is not None and encoding_2 is not None:
+    similarity = cosine_similarity([encoding_1], [encoding_2])[0][0]
+    print(f"Cosine similarity between {image_path_1} and {image_path_2}: {similarity:.4f}")
+else:
+    print("Face not detected in one or both images.")
+
+from facenet_pytorch import MTCNN, InceptionResnetV1
+from PIL import Image, ImageDraw
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import cosine
+
+# Initialize MTCNN and InceptionResnetV1
+mtcnn = MTCNN(keep_all=True)
+model = InceptionResnetV1(pretrained='vggface2').eval()
+
+# Function to detect faces and draw bounding boxes
+def draw_face_markings(image_path):
+    img = Image.open(image_path)
+    boxes, _ = mtcnn.detect(img)  # Detect faces and get bounding boxes
+    if boxes is not None:
+        draw = ImageDraw.Draw(img)
+        for box in boxes:
+            draw.rectangle([box[0], box[1], box[2], box[3]], outline='red', width=3)  # Correctly specify the coordinates
+    return img
+
+# Function to generate facial encoding
+
+def get_face_encoding(image_path):
+    img = Image.open(image_path)
+    img_cropped = mtcnn(img)  # Detect faces in the image
+    if img_cropped is None or len(img_cropped) == 0:
+        return None  # No face detected, return None
+    img_embedding = model(img_cropped[0].unsqueeze(0))  # Extract the facial embedding for the first detected face
+    return img_embedding.detach().numpy().flatten()  # Return as 1D array (512-dimensional)
+
+# Example image paths
+image_path_1 = "/path/to/image"
+image_path_2 = "/path/to/image"
+
+# Generate encodings
+encoding_1 = get_face_encoding(image_path_1)
+encoding_2 = get_face_encoding(image_path_2)
+
+# Check if both encodings are available
+if encoding_1 is not None and encoding_2 is not None:
+    # Compute cosine similarity
+    similarity = 1 - cosine(encoding_1, encoding_2)  # Cosine similarity
+    print(f"Cosine Similarity: {similarity:.4f}")
+else:
+    print("One or both images do not contain a detectable face.")
+
+# Draw and display the images with face markings
+img1_with_boxes = draw_face_markings(image_path_1)
+img2_with_boxes = draw_face_markings(image_path_2)
+
+# Display images
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+axes[0].imshow(img1_with_boxes)
+axes[0].set_title("Priyanka Chopra Image 1")
+axes[0].axis("off")
+
+axes[1].imshow(img2_with_boxes)
+axes[1].set_title("Priyanka Chopra Image 2")
+axes[1].axis("off")
+
+plt.show()
